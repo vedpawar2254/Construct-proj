@@ -3,9 +3,10 @@
     "name": "ContextisKing",
     "version": "1.0",
     "description": "Context is King",
-    "permissions": ["storage"],
+    "permissions": ["storage", "tabs"],
     "background": {
-      "service_worker": "background.js"
+      "service_worker": "background.js",
+      "type": "module"
     },
     "content_scripts": [
       {
@@ -16,6 +17,12 @@
     ],
     "action": {
       "default_popup": "ui/popup.html"
-    }
+    },
+    "web_accessible_resources": [
+      {
+        "resources": ["logic/db.js"],
+        "matches": ["<all_urls>"]
+      }
+    ]
   }
   

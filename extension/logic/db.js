@@ -42,6 +42,11 @@ const STORAGE_KEYS = {
     return memories[id];
   }
 
+
+  export async function getAllMemories() {
+    return await _load(STORAGE_KEYS.MEMORIES);
+  }
+
   // ----------------------
 // Relevance Scoring
 // ----------------------
@@ -57,6 +62,8 @@ function _scoreMemory(memory, domain) {
   
     return score;
   }
+
+
 
   
 // ----------------------
@@ -78,9 +85,7 @@ export async function getRelevantMemories(domain, limit = 5) {
   
 
   
-  export async function getAllMemories() {
-    return await _load(STORAGE_KEYS.MEMORIES);
-  }
+
   
   export async function getMemoriesByDomain(domain) {
     const memories = await getAllMemories();

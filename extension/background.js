@@ -1,33 +1,30 @@
-console.log("🔥 BACKGROUND RUNNING");
+import { saveMemory } from "./logic/db.js";
+
+console.log("🔥 Background memory engine active");
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === "ADD_CONTEXT") {
-    console.log("[Background] Received:", msg.payload);
+    if (msg.type === "ADD_CONTEXT") {
+        console.log("[Background] Storing memory:", msg.payload);
 
-    chrome.storage.local.get(["contexts"], (data) => {
-      const existing = data.contexts || [];
+        const url = sender.tab?.url ? new URL(sender.tab.url) : null;
+        const domain = url ? url.hostname : "unknown";
 
-      const updated = [
-        {
-          text: msg.payload,
-          createdAt: Date.now()
-        },
-        ...existing
-      ];
+        saveMemory(msg.payload, {
+            domain,
+            importance: 1,
+            source: "shortcut"
+        }).then(memory => {
+            console.log("[Background] Memory saved:", memory);
+            sendResponse({ status: "ok", saved: memory });
+        });
 
-      chrome.storage.local.set({ contexts: updated }, () => {
-        console.log("[Background] Saved context.");
-        sendResponse({ status: "ok", saved: msg.payload });
-      });
-    });
+        return true;
+    }
 
-    return true; 
-  }
-
-  if (msg.type === "GET_CONTEXTS") {
-    chrome.storage.local.get(["contexts"], (data) => {
-      sendResponse(data.contexts || []);
-    });
-    return true;
-  }
+    if (msg.type === "EXPORT_ALL") {
+        chrome.storage.local.get(null, (all) => {
+            sendResponse(all);
+        });
+        return true;
+    }
 });

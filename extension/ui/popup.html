@@ -17,8 +17,28 @@
     </style>
   </head>
   <body>
-    <h3>Captured Context</h3>
-    <div id="contexts"></div>
-    <script src="popup.js"></script>
+    <div style="padding: 12px; width: 300px;">
+
+        <h3>Context Preview</h3>
+      
+        <div><strong>Domain:</strong> <span id="domain">…</span></div>
+      
+        <textarea 
+          id="contextPreview"
+          style="width:100%; height:200px; margin-top:8px;"
+          readonly
+        ></textarea>
+      
+        <button id="refreshBtn" style="margin-top:10px; width:100%;">
+          Refresh
+        </button>
+      
+        <button id="copyBtn" style="margin-top:6px; width:100%;">
+          Copy Assembled Context
+        </button>
+      
+      </div>
+      
+      <script type="module" src="popup.js"></script>
   </body>
 </html>
