@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "ContextisKing",
+    "version": "1.0",
+    "description": "Context is King",
+    "permissions": ["storage"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["contentScript.js"],
+        "run_at": "document_start"
+      }
+    ],
+    "action": {
+      "default_popup": "ui/popup.html"
+    }
+  }
+  
