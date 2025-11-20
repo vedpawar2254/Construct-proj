@@ -89,7 +89,7 @@ function startObserver() {
 
 safeReady(startObserver);
 
-// Listen for background trigger (Global Hotkey)
+// Listen for background triggers (Global Hotkeys)
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "TRIGGER_CAPTURE") {
         console.log(" Received TRIGGER_CAPTURE from background");
@@ -110,6 +110,50 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             chrome.runtime.sendMessage({ type: "ADD_CONTEXT", payload: selectedText });
         } else {
             console.warn(" No text to capture.");
+        }
+    }
+
+    if (msg.type === "TRIGGER_INJECT") {
+        console.log(" Received TRIGGER_INJECT from background");
+
+        const host = window.location.hostname;
+        const isChatGPT = host === "chatgpt.com" || host.endsWith("openai.com");
+        const isClaude = host === "claude.ai" || host.endsWith("claude.ai");
+        const isPerplexity = host === "www.perplexity.ai" || host.endsWith("perplexity.ai");
+
+        let inputEl = null;
+        if (isChatGPT) {
+            inputEl = findChatGPTInput();
+        } else if (isClaude) {
+            // Claude: textarea or main contenteditable composer
+            inputEl = document.querySelector("textarea[placeholder*='Message'], textarea[placeholder*='message']")
+                || document.querySelector("div[contenteditable='true']");
+        } else if (isPerplexity) {
+            // Perplexity: main query box
+            inputEl = document.querySelector("textarea[placeholder*='Ask anything'], textarea, div[contenteditable='true']");
+        }
+
+        if (!inputEl) {
+            console.warn("[ContextisKing] No AI input element found for manual inject");
+            return;
+        }
+
+        try {
+            if (!chrome.runtime || !chrome.runtime.id) return;
+            chrome.runtime.sendMessage({ type: "GET_ASSEMBLED_CONTEXT" }, (resp) => {
+                if (chrome.runtime.lastError) {
+                    console.error("[ContextisKing] Failed to get assembled context (manual)", chrome.runtime.lastError);
+                    return;
+                }
+                if (!resp || resp.status !== "ok" || !resp.finalContext) {
+                    console.log("[ContextisKing] No assembled context returned (manual)", resp);
+                    return;
+                }
+                console.log("[ContextisKing] Manually injecting assembled context");
+                injectContextIntoInput(inputEl, resp.finalContext);
+            });
+        } catch (err) {
+            console.error("[ContextisKing] Error requesting assembled context (manual)", err);
         }
     }
 });

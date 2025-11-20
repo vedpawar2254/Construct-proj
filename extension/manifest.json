@@ -31,6 +31,13 @@
           "mac": "Command+Shift+1"
         },
         "description": "Capture selected text as context"
+      },
+      "inject_context": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+2",
+          "mac": "Command+Shift+2"
+        },
+        "description": "Inject assembled context into the active AI chat box"
       }
     },
     "options_page": "ui/options.html"
