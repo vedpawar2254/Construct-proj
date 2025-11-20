@@ -23,6 +23,16 @@
         "resources": ["logic/db.js"],
         "matches": ["<all_urls>"]
       }
-    ]
+    ],
+    "commands": {
+      "capture_context": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+1",
+          "mac": "Command+Shift+1"
+        },
+        "description": "Capture selected text as context"
+      }
+    },
+    "options_page": "ui/options.html"
   }
   

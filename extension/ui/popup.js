@@ -1,4 +1,4 @@
-console.log("📌 Popup script loaded.");
+console.log("📌 Popup script loaded.knjbhjgvvkjbhj");
 
 import { getSettings, getSummary, getRelevantMemories } from "../logic/db.js";
 
@@ -71,6 +71,7 @@ async function render() {
 document.addEventListener("DOMContentLoaded", () => {
     const copyBtn = document.getElementById("copyBtn");
     const refreshBtn = document.getElementById("refreshBtn");
+    const sendToMemoryBtn = document.getElementById("sendToMemoryBtn");
 
     if (copyBtn) {
         copyBtn.addEventListener("click", async () => {
@@ -83,6 +84,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (refreshBtn) {
         refreshBtn.addEventListener("click", render);
+    }
+
+    if (sendToMemoryBtn) {
+        sendToMemoryBtn.addEventListener("click", async () => {
+            try {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (!tab?.id) return;
+                chrome.tabs.sendMessage(tab.id, { type: "TRIGGER_CAPTURE" });
+            } catch (err) {
+                console.error("Failed to trigger capture from popup", err);
+            }
+        });
     }
 
     // Initial render

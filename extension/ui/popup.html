@@ -26,8 +26,15 @@
         <textarea 
           id="contextPreview"
           style="width:100%; height:200px; margin-top:8px;"
-          readonly
         ></textarea>
+
+        <div id="chunksPanel" style="margin-top:10px; border-top:1px solid #ddd; padding-top:8px;">
+          <div style="font-weight:bold; font-size:13px;">Included memories</div>
+          <div id="chunksList" style="max-height:120px; overflow-y:auto; margin-top:4px; font-size:12px;"></div>
+          <button id="saveContextBtn" style="margin-top:6px; width:100%;">
+            Save Changes
+          </button>
+        </div>
       
         <button id="refreshBtn" style="margin-top:10px; width:100%;">
           Refresh
@@ -35,6 +42,10 @@
       
         <button id="copyBtn" style="margin-top:6px; width:100%;">
           Copy Assembled Context
+        </button>
+
+        <button id="sendToMemoryBtn" style="margin-top:6px; width:100%;">
+          Send Selection to Memory
         </button>
       
       </div>

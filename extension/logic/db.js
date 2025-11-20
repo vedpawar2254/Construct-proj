@@ -1,7 +1,15 @@
 const STORAGE_KEYS = {
     MEMORIES: "memories",
+    TAGS: "tags",
     SUMMARIES: "summaries",
     SETTINGS: "settings",
+  };
+
+  // Default memory importance levels
+  const IMPORTANCE_LEVELS = {
+    LOW: 1,
+    MEDIUM: 2,
+    HIGH: 3
   };
   
   // ----------------------
@@ -25,21 +33,30 @@ const STORAGE_KEYS = {
   // ----------------------
   export async function saveMemory(text, metadata = {}) {
     const memories = await _load(STORAGE_KEYS.MEMORIES);
-  
-    const id = _generateId();
-    memories[id] = {
-      id,
+    const now = Date.now();
+    
+    const memory = {
+      id: metadata.id || _generateId(),
       text,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      importance: metadata.importance || 1,
-      domain: metadata.domain || null,
+      summary: metadata.summary || '',
+      importance: metadata.importance || IMPORTANCE_LEVELS.MEDIUM,
+      lastUsed: metadata.lastUsed || now,
       tags: metadata.tags || [],
-      source: metadata.source || "manual",
+      createdAt: metadata.createdAt || now,
+      updatedAt: now,
+      domain: metadata.domain || null,
+      source: metadata.source || 'manual',
     };
-  
+
+    memories[memory.id] = memory;
     await _save(STORAGE_KEYS.MEMORIES, memories);
-    return memories[id];
+    
+    // Update tags index
+    if (memory.tags && memory.tags.length > 0) {
+      await _updateTagsIndex(memory.tags, memory.id);
+    }
+    
+    return memory;
   }
 
 
@@ -87,34 +104,177 @@ export async function getRelevantMemories(domain, limit = 5) {
   
 
   
+  export async function getMemory(id) {
+    const memories = await _load(STORAGE_KEYS.MEMORIES);
+    return memories[id] || null;
+  }
+  
   export async function getMemoriesByDomain(domain) {
-    const memories = await getAllMemories();
+    const memories = await _load(STORAGE_KEYS.MEMORIES);
     return Object.values(memories).filter(m => m.domain === domain);
+  }
+  
+  export async function updateMemoryUsage(id) {
+    const memory = await getMemory(id);
+    if (!memory) return null;
+    
+    return updateMemory(id, {
+      lastUsed: Date.now(),
+      usageCount: (memory.usageCount || 0) + 1
+    });
   }
   
   export async function deleteMemory(id) {
     const memories = await _load(STORAGE_KEYS.MEMORIES);
+    const memory = memories[id];
+    
+    if (!memory) return false;
+    
+    // Remove from tags index
+    if (memory.tags && memory.tags.length > 0) {
+      await _updateTagsIndex([], id, memory.tags);
+    }
+    
+    // Delete the memory
     delete memories[id];
     await _save(STORAGE_KEYS.MEMORIES, memories);
+    
+    return true;
   }
   
-  export async function updateMemory(id, newData) {
+  export async function updateMemory(id, updates) {
     const memories = await _load(STORAGE_KEYS.MEMORIES);
-  
+    
     if (!memories[id]) return null;
-  
+    
+    const oldTags = memories[id].tags || [];
+    const newTags = updates.tags || oldTags;
+    
+    // Update memory
     memories[id] = {
       ...memories[id],
-      ...newData,
+      ...updates,
       updatedAt: Date.now()
     };
-  
+    
     await _save(STORAGE_KEYS.MEMORIES, memories);
+    
+    // Update tags index if tags were modified
+    if (JSON.stringify(oldTags) !== JSON.stringify(newTags)) {
+      await _updateTagsIndex(newTags, id, oldTags);
+    }
+    
     return memories[id];
   }
   
   // ----------------------
-  // Chat Summaries
+  // Tag Management
+  // ----------------------
+  async function _updateTagsIndex(newTags, memoryId, oldTags = []) {
+    const tags = await _load(STORAGE_KEYS.TAGS);
+    
+    // Remove from old tags
+    oldTags.forEach(tag => {
+      if (tags[tag]) {
+        const index = tags[tag].indexOf(memoryId);
+        if (index > -1) {
+          tags[tag].splice(index, 1);
+          if (tags[tag].length === 0) {
+            delete tags[tag];
+          }
+        }
+      }
+    });
+    
+    // Add to new tags
+    newTags.forEach(tag => {
+      if (!tags[tag]) {
+        tags[tag] = [];
+      }
+      if (!tags[tag].includes(memoryId)) {
+        tags[tag].push(memoryId);
+      }
+    });
+    
+    await _save(STORAGE_KEYS.TAGS, tags);
+  }
+  
+  export async function getMemoriesByTag(tag) {
+    const tags = await _load(STORAGE_KEYS.TAGS);
+    const memoryIds = tags[tag] || [];
+    const memories = await _load(STORAGE_KEYS.MEMORIES);
+    
+    return memoryIds
+      .map(id => memories[id])
+      .filter(Boolean) // Filter out any undefined memories
+      .sort((a, b) => b.lastUsed - a.lastUsed);
+  }
+  
+  export async function getAllTags() {
+    const tags = await _load(STORAGE_KEYS.TAGS);
+    return Object.keys(tags).sort();
+  }
+  
+  export async function searchMemories(query, options = {}) {
+    const { limit = 10, tags = [] } = options;
+    let memories = Object.values(await _load(STORAGE_KEYS.MEMORIES));
+    
+    // Filter by tags if provided
+    if (tags.length > 0) {
+      memories = memories.filter(memory => 
+        tags.every(tag => memory.tags.includes(tag))
+      );
+    }
+    
+    // Simple text search (can be enhanced with more sophisticated search later)
+    if (query) {
+      const queryLower = query.toLowerCase();
+      memories = memories.filter(memory => 
+        memory.text.toLowerCase().includes(queryLower) ||
+        (memory.summary && memory.summary.toLowerCase().includes(queryLower))
+      );
+    }
+    
+    // Sort by last used (most recent first)
+    memories.sort((a, b) => b.lastUsed - a.lastUsed);
+    
+    return memories.slice(0, limit);
+  }
+  
+  // ----------------------
+  // Memory Summarization
+  // ----------------------
+  export async function updateMemorySummary(memoryId, summary) {
+    const memories = await _load(STORAGE_KEYS.MEMORIES);
+    
+    if (!memories[memoryId]) return null;
+    
+    memories[memoryId] = {
+      ...memories[memoryId],
+      summary,
+      updatedAt: Date.now()
+    };
+    
+    await _save(STORAGE_KEYS.MEMORIES, memories);
+    return memories[memoryId];
+  }
+  
+  export async function generateMemorySummary(memoryId) {
+    // This is a placeholder for AI-based summarization
+    // In a real implementation, this would call an AI service
+    const memory = await getMemory(memoryId);
+    if (!memory) return null;
+    
+    // Simple truncation as fallback
+    const summary = memory.text.length > 100 
+      ? memory.text.substring(0, 97) + '...'
+      : memory.text;
+    
+    return updateMemorySummary(memoryId, summary);
+  }
+  
+  // ----------------------
+  // Chat Summaries (legacy support)
   // ----------------------
   export async function saveSummary(domain, summary) {
     const summaries = await _load(STORAGE_KEYS.SUMMARIES);
