@@ -41,6 +41,42 @@ const STORAGE_KEYS = {
     await _save(STORAGE_KEYS.MEMORIES, memories);
     return memories[id];
   }
+
+  // ----------------------
+// Relevance Scoring
+// ----------------------
+function _scoreMemory(memory, domain) {
+    let score = 0;
+    if (memory.domain === domain) score += 5;
+  
+    score += (memory.importance || 1) * 2;
+  
+    const ageMs = Date.now() - memory.updatedAt;
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+    score += Math.max(0, 5 - ageDays); 
+  
+    return score;
+  }
+
+  
+// ----------------------
+// Retrieve Relevant Memories
+// ----------------------
+export async function getRelevantMemories(domain, limit = 5) {
+    const memories = await getAllMemories();
+    const memList = Object.values(memories);
+  
+    const scored = memList
+      .map(m => ({
+        ...m,
+        score: _scoreMemory(m, domain)
+      }))
+      .sort((a, b) => b.score - a.score);
+  
+    return scored.slice(0, limit);
+  }
+  
+
   
   export async function getAllMemories() {
     return await _load(STORAGE_KEYS.MEMORIES);

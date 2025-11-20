@@ -1,11 +1,22 @@
-chrome.storage.local.get(["contextStore"], (data) => {
-    const list = document.getElementById("list");
-    const items = data.contextStore || [];
+document.addEventListener("DOMContentLoaded", () => {
+    chrome.runtime.sendMessage({ type: "GET_CONTEXTS" }, (contexts) => {
+      const container = document.getElementById("contexts");
   
-    items.forEach((text) => {
-      const li = document.createElement("li");
-      li.textContent = text;
-      list.appendChild(li);
+      if (!contexts || contexts.length === 0) {
+        container.innerHTML = "<p>No contexts captured yet.</p>";
+        return;
+      }
+  
+      container.innerHTML = contexts
+        .map(
+          (ctx) => `
+          <div class="ctx-item">
+            <p>${ctx.text}</p>
+            <small>${new Date(ctx.createdAt).toLocaleString()}</small>
+          </div>
+        `
+        )
+        .join("");
     });
   });
   

@@ -3,20 +3,22 @@
   <head>
     <style>
       body {
-        width: 250px;
         font-family: sans-serif;
+        width: 300px;
         padding: 10px;
       }
-      li {
-        margin-bottom: 6px;
-        font-size: 14px;
+      .ctx-item {
+        border-bottom: 1px solid #ddd;
+        padding: 8px 0;
+      }
+      small {
+        color: gray;
       }
     </style>
   </head>
   <body>
-    <h3>Context is King</h3>
-    <ul id="list"></ul>
-
+    <h3>Captured Context</h3>
+    <div id="contexts"></div>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -1,16 +1,33 @@
-let contextStore = [];
+console.log("🔥 BACKGROUND RUNNING");
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "ADD_CONTEXT") {
-    contextStore.push(msg.payload);
+    console.log("[Background] Received:", msg.payload);
 
-    chrome.storage.local.set({ contextStore });
+    chrome.storage.local.get(["contexts"], (data) => {
+      const existing = data.contexts || [];
 
-    console.log("[Background] Added context:", msg.payload);
-    console.log("[Background] Current contextStore:", contextStore);
+      const updated = [
+        {
+          text: msg.payload,
+          createdAt: Date.now()
+        },
+        ...existing
+      ];
 
-    sendResponse({ status: "ok" });
+      chrome.storage.local.set({ contexts: updated }, () => {
+        console.log("[Background] Saved context.");
+        sendResponse({ status: "ok", saved: msg.payload });
+      });
+    });
+
+    return true; 
   }
 
-  return true;
+  if (msg.type === "GET_CONTEXTS") {
+    chrome.storage.local.get(["contexts"], (data) => {
+      sendResponse(data.contexts || []);
+    });
+    return true;
+  }
 });
